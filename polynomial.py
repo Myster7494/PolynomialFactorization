@@ -5,6 +5,12 @@ class Monomial:
     """ 任意整係數單項式 """
 
     def __init__(self, coefficient: int, degree: int):
+        """
+        任意整係數單項式
+
+        :param coefficient: 係數
+        :param degree: 次數
+        """
         self.coefficient = coefficient
         self.power = degree
 
@@ -61,8 +67,11 @@ class Quadratic(Polynomial):
     class discriminant_enum(Enum):
         """ 判別式的結果 """
         TWO_SAME_ROOTS = 2
+        """ 重實根 """
         TWO_DIFFERENT_ROOTS = 1
+        """ 兩相異實根 """
         NO_REAL_ROOT = 0
+        """ 無實根 """
 
     def __init__(self, a: int, b: int, c: int):
         super().__init__((a, b, c))
@@ -80,7 +89,11 @@ class Quadratic(Polynomial):
         return self.coefficients[0]
 
     def discriminant(self) -> discriminant_enum:
-        """ 回傳判別式的結果 """
+        """
+        回傳判別式的結果
+
+        :return: 判別式的結果
+        """
         result = self.get_b() ** 2 - 4 * self.get_a() * self.get_c()
         if result < 0:
             return self.discriminant_enum.NO_REAL_ROOT

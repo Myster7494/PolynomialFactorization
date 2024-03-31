@@ -1,3 +1,3 @@
-import util
+import fraction
 
-print(util.is_coprime(3, 5))
+print(fraction.Fraction(1, 2) * 3.5)
