@@ -1,3 +1,4 @@
-import fraction
+import util
+from polynomial import Polynomial
 
-print(fraction.Fraction(1, 2) * 3.5)
+util.synthetic_division(Polynomial((1, -12, 0, -42)), Polynomial((1, 1, -3)))

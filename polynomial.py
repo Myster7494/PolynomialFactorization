@@ -37,6 +37,10 @@ class Polynomial:
     def __len__(self) -> int:
         return len(self.coefficients)
 
+    def get_coefficients(self) -> tuple[int, ...]:
+        """ 回傳多項式的所有係數 """
+        return self.coefficients
+
     def get_degree(self) -> int:
         """ 回傳多項式的最高次數 """
         return len(self) - 1
