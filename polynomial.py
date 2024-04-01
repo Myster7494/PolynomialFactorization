@@ -1,10 +1,12 @@
 from enum import Enum
 
+from fraction import Fraction
+
 
 class Monomial:
     """ 任意整係數單項式 """
 
-    def __init__(self, coefficient: int, degree: int):
+    def __init__(self, coefficient: int | Fraction, degree: int):
         """
         任意整係數單項式
 
@@ -14,7 +16,7 @@ class Monomial:
         self.coefficient = coefficient
         self.power = degree
 
-    def get_coefficient(self) -> int:
+    def get_coefficient(self) -> int | Fraction:
         """ 回傳單項式的係數 """
         return self.coefficient
 
@@ -26,7 +28,7 @@ class Monomial:
 class Polynomial:
     """ 任意整係數多項式 """
 
-    def __init__(self, coefficients: tuple[int, ...]):
+    def __init__(self, coefficients: tuple[int | Fraction, ...] | list[int | Fraction]):
         """
         任意整係數多項式
 
@@ -37,19 +39,25 @@ class Polynomial:
     def __len__(self) -> int:
         return len(self.coefficients)
 
-    def get_coefficients(self) -> tuple[int, ...]:
+    def __str__(self) -> str:
+        return str(self.coefficients)
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def get_coefficients(self) -> tuple[int | Fraction, ...]:
         """ 回傳多項式的所有係數 """
         return self.coefficients
 
-    def get_degree(self) -> int:
+    def get_degree(self) -> int | Fraction:
         """ 回傳多項式的最高次數 """
         return len(self) - 1
 
-    def lower_degree_coefficient(self) -> int:
+    def lower_degree_coefficient(self) -> int | Fraction:
         """ 回傳多項式的常數項 """
         return self.coefficients[0]
 
-    def highest_degree_coefficient(self) -> int:
+    def highest_degree_coefficient(self) -> int | Fraction:
         """ 回傳多項式的最高次項係數 """
         return self.coefficients[-1]
 
@@ -77,18 +85,18 @@ class Quadratic(Polynomial):
         NO_REAL_ROOT = 0
         """ 無實根 """
 
-    def __init__(self, a: int, b: int, c: int):
+    def __init__(self, a: int | Fraction, b: int | Fraction, c: int | Fraction):
         super().__init__((a, b, c))
 
-    def get_a(self) -> int:
+    def get_a(self) -> int | Fraction:
         """ 回傳二次多項式的二次項係數 """
         return self.coefficients[2]
 
-    def get_b(self) -> int:
+    def get_b(self) -> int | Fraction:
         """ 回傳二次多項式的一次項係數 """
         return self.coefficients[1]
 
-    def get_c(self) -> int:
+    def get_c(self) -> int | Fraction:
         """ 回傳二次多項式的常數項 """
         return self.coefficients[0]
 
@@ -105,3 +113,30 @@ class Quadratic(Polynomial):
             return self.discriminant_enum.TWO_SAME_ROOTS
         if result > 0:
             return self.discriminant_enum.TWO_DIFFERENT_ROOTS
+
+
+def synthetic_division(dividend: Polynomial, divisor: Polynomial) -> Polynomial:
+    """
+    進行綜合除法，回傳商式
+    :param dividend: 被除式
+    :param divisor: 除式
+    :return: 商式
+    """
+    dividend_coefficients = dividend.get_coefficients()
+    leading_coefficient = divisor.highest_degree_coefficient()
+    divisor_coefficients = [-Fraction(coefficient, leading_coefficient) for coefficient in
+                            list(divisor.get_coefficients())[:-1]]
+    coefficients_difference = len(dividend_coefficients) - len(divisor_coefficients)
+    table: list[list[int | Fraction]] = [[0] * coefficients_difference for _ in
+                                         range(len(divisor_coefficients))]  # row為直，column為橫
+    quotient_coefficients: list[int | Fraction] = [dividend_coefficients[i] for i in range(coefficients_difference)]
+    for i in range(coefficients_difference):
+        for j in range(len(divisor_coefficients)):
+            if i - j - 1 >= 0:
+                quotient_coefficients[i] = table[j][i - j - 1] + quotient_coefficients[i]
+        for j, divisor_coefficient in enumerate(divisor_coefficients):
+            table[j][i] = divisor_coefficient * quotient_coefficients[i]
+    return Polynomial([(quotient_coefficient if isinstance(quotient_coefficient, Fraction) else Fraction(
+        quotient_coefficient)) / (leading_coefficient if isinstance(leading_coefficient, Fraction) else Fraction(
+        leading_coefficient)) for quotient_coefficient in
+                       quotient_coefficients])

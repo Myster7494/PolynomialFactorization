@@ -19,8 +19,13 @@ class Fraction:
 
     def __str__(self):
         if self.denominator == 1:
+            if isinstance(self.numerator, float) and self.numerator.is_integer():
+                return str(int(self.numerator))
             return str(self.numerator)
         return f"{self.numerator}/{self.denominator}"
+
+    def __repr__(self):
+        return self.__str__()
 
     def __add__(self, other):
         """ 分數加法 """

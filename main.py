@@ -1,4 +1,3 @@
-import util
-from polynomial import Polynomial
+from polynomial import Polynomial, synthetic_division
 
-util.synthetic_division(Polynomial((1, -2, 1)), Polynomial((1,-1)))
+print(synthetic_division(Polynomial((1, -2, 1)), Polynomial((-1, 1))))
