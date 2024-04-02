@@ -125,10 +125,10 @@ def synthetic_division(dividend: Polynomial, divisor: Polynomial) -> Polynomial:
     dividend_coefficients = dividend.get_coefficients()[::-1]
     leading_coefficient = divisor.highest_degree_coefficient()
     divisor_coefficients = [-Rational(coefficient, leading_coefficient) for coefficient in
-                            divisor.get_coefficients()[:-1]]
+                            divisor.get_coefficients()[-2::-1]]
     coefficients_difference = len(dividend_coefficients) - len(divisor_coefficients)
     table: list[list[Rational]] = [[Rational(0)] * coefficients_difference for _ in
-                                   range(len(divisor_coefficients))]  # row為直，column為橫
+                                   range(len(divisor_coefficients))]
     quotient_coefficients: list[int | Rational] = [dividend_coefficients[i] for i in range(coefficients_difference)]
     for i in range(coefficients_difference):
         for j in range(len(divisor_coefficients)):
@@ -136,7 +136,6 @@ def synthetic_division(dividend: Polynomial, divisor: Polynomial) -> Polynomial:
                 quotient_coefficients[i] = table[j][i - j - 1] + quotient_coefficients[i]
         for j, divisor_coefficient in enumerate(divisor_coefficients):
             table[j][i] = divisor_coefficient * quotient_coefficients[i]
-    print(table)
     return Polynomial([(quotient_coefficient if isinstance(quotient_coefficient, Rational) else Rational(
         quotient_coefficient)) / (leading_coefficient if isinstance(leading_coefficient, Rational) else Rational(
         leading_coefficient)) for quotient_coefficient in
