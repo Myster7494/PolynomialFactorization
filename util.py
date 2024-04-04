@@ -32,14 +32,19 @@ def gcd(value1: int, value2: int) -> int:
     return gcd(value2, value1 % value2)
 
 
-def lcm(value1: int, value2: int) -> int:
+def lcm(values: tuple[int, ...] | list[int] | set[int]) -> int:
     """
     求兩個 int value 的最小公倍數
 
-    :param value1: 第一個整數
-    :param value2: 第二個整數
+    :param values: 欲求最小公倍數的所有整數
     """
-    return abs(value1 * value2) // gcd(value1, value2)
+    if len(values) < 2:
+        raise ValueError("At least 2 values are required.")
+
+    if len(values) == 2:
+        return abs(values[0] * values[1]) // gcd(values[0], values[1])
+    else:
+        return lcm((values[0], lcm(values[1:])))
 
 
 def is_coprime(value1: int, value2: int) -> bool:

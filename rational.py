@@ -21,9 +21,12 @@ class Rational:
             numerator, denominator = numerator.numerator_and_denominator()
         elif isinstance(numerator, Rational) or isinstance(denominator, Rational):
             numerator, denominator = Rational(Rational(numerator) / Rational(denominator)).numerator_and_denominator()
-        reduction = util.gcd(numerator, denominator)
-        self.numerator = numerator // reduction
-        self.denominator = denominator // reduction
+        if not util.is_coprime(numerator, denominator):
+            reduction = util.gcd(numerator, denominator)
+            numerator //= reduction
+            denominator //= reduction
+        self.numerator = numerator
+        self.denominator = denominator
 
     def __str__(self):
         if self.denominator == 1:
@@ -36,18 +39,21 @@ class Rational:
         return self.__str__()
 
     def __add__(self, other):
-        """ 分數加法 """
+        """ 實數加法 """
         if not isinstance(other, self.__class__):
             other = Rational(other)
-        lcd = util.lcm(self.denominator, other.denominator)
+        lcd = util.lcm((self.denominator, other.denominator))
         return Rational(self.numerator * (lcd // self.denominator) + other.numerator * (lcd // other.denominator), lcd)
 
+    def __iadd__(self, other):
+        return self.__add__(other)
+
     def __sub__(self, other):
-        """ 分數減法 """
+        """ 實數減法 """
         return self.__add__(-other)
 
     def __mul__(self, other):
-        """ 分數乘法 """
+        """ 實數乘法 """
         if not isinstance(other, self.__class__):
             other = Rational(other)
         reduction1 = util.gcd(self.numerator, other.denominator)
@@ -56,19 +62,37 @@ class Rational:
                         (self.denominator // reduction2) * (other.denominator // reduction1))
 
     def __truediv__(self, other):
-        """ 分數除法 """
+        """ 實數除法 """
         return self.__mul__(other ** -1)
 
     def __pow__(self, power: int):
-        """ 分數的整數次方 """
+        """ 實數的整數次方 """
         if power < 0:
             return Rational(self.denominator ** abs(power), self.numerator ** abs(power))
         return Rational(self.numerator ** power, self.denominator ** power)
 
     def __neg__(self):
-        """ 分數變號 """
+        """ 實數變號 """
         return Rational(-self.numerator, self.denominator)
+
+    def __eq__(self, other):
+        """ 判斷實數是否相等 """
+        if not isinstance(other, self.__class__):
+            other = Rational(other)
+        return self.numerator == other.numerator and self.denominator == other.denominator
 
     def numerator_and_denominator(self) -> tuple[int, int]:
         """ 回傳分子與分母 """
         return self.numerator, self.denominator
+
+    def is_integer(self) -> bool:
+        """ 判斷是否為整數 """
+        return self.denominator == 1
+
+    def get_numerator(self) -> int:
+        """ 回傳分子 """
+        return self.numerator
+
+    def get_denominator(self) -> int:
+        """ 回傳分母 """
+        return self.denominator
