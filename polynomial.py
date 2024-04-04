@@ -28,19 +28,33 @@ class Monomial:
 class Polynomial:
     """ 任意整係數多項式 """
 
-    def __init__(self, coefficients: tuple[int | float | Rational, ...] | list[int | float | Rational]):
+    class ArrangementEnum(Enum):
+        """ 多項式的排列方式 """
+        DESCENDING = 0
+        """ 降冪排列 """
+        ASCENDING = 1
+        """ 升冪排列 """
+
+    def __init__(self, coefficients: tuple[int | float | Rational, ...] | list[
+        int | float | Rational] | int | float | Rational,
+                 arrangement: ArrangementEnum = ArrangementEnum.DESCENDING):
         """
         任意整係數多項式
 
-        coefficients[i] = 第 i 次的係數
+        預設為降冪排列
         """
-        self.coefficients = [Rational(coefficient) for coefficient in coefficients]
+        if isinstance(coefficients, (tuple, list)):
+            coefficients = [Rational(coefficient) for coefficient in
+                            (coefficients[::-1] if arrangement == self.ArrangementEnum.DESCENDING else coefficients)]
+        else:
+            coefficients = [Rational(coefficients)]
+        self.coefficients = coefficients
 
     def __len__(self) -> int:
         return len(self.coefficients)
 
     def __str__(self) -> str:
-        return str(self.coefficients)
+        return str(self.coefficients[::-1])
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -76,7 +90,7 @@ class Polynomial:
 class Quadratic(Polynomial):
     """ 二次整係數多項式 """
 
-    class discriminant_enum(Enum):
+    class DiscriminantEnum(Enum):
         """ 判別式的結果 """
         TWO_SAME_ROOTS = 2
         """ 重實根 """
@@ -100,7 +114,7 @@ class Quadratic(Polynomial):
         """ 回傳二次多項式的常數項 """
         return self.coefficients[0]
 
-    def discriminant(self) -> discriminant_enum:
+    def discriminant(self) -> DiscriminantEnum:
         """
         回傳判別式的結果
 
@@ -108,11 +122,11 @@ class Quadratic(Polynomial):
         """
         result = self.get_b() ** 2 - Rational(4) * self.get_a() * self.get_c()
         if result < 0:
-            return self.discriminant_enum.NO_REAL_ROOT
+            return self.DiscriminantEnum.NO_REAL_ROOT
         if result == 0:
-            return self.discriminant_enum.TWO_SAME_ROOTS
+            return self.DiscriminantEnum.TWO_SAME_ROOTS
         if result > 0:
-            return self.discriminant_enum.TWO_DIFFERENT_ROOTS
+            return self.DiscriminantEnum.TWO_DIFFERENT_ROOTS
 
 
 def synthetic_division(dividend: Polynomial, divisor: Polynomial) -> Polynomial:
@@ -122,21 +136,19 @@ def synthetic_division(dividend: Polynomial, divisor: Polynomial) -> Polynomial:
     :param divisor: 除式
     :return: 商式
     """
+    if dividend.get_degree() < divisor.get_degree():
+        return Polynomial(0)
     dividend_coefficients = dividend.get_coefficients()[::-1]
     leading_coefficient = divisor.highest_degree_coefficient()
     divisor_coefficients = [-Rational(coefficient, leading_coefficient) for coefficient in
                             divisor.get_coefficients()[-2::-1]]
     coefficients_difference = len(dividend_coefficients) - len(divisor_coefficients)
-    table: list[list[Rational]] = [[Rational(0)] * coefficients_difference for _ in
-                                   range(len(divisor_coefficients))]
-    quotient_coefficients: list[int | Rational] = [dividend_coefficients[i] for i in range(coefficients_difference)]
+    table: list[list[Rational]] = [[Rational(0)] * coefficients_difference for _ in range(len(divisor_coefficients))]
+    quotient_coefficients: list[Rational] = [dividend_coefficients[i] for i in range(coefficients_difference)]
     for i in range(coefficients_difference):
         for j in range(len(divisor_coefficients)):
             if i - j - 1 >= 0:
                 quotient_coefficients[i] = table[j][i - j - 1] + quotient_coefficients[i]
         for j, divisor_coefficient in enumerate(divisor_coefficients):
             table[j][i] = divisor_coefficient * quotient_coefficients[i]
-    return Polynomial([(quotient_coefficient if isinstance(quotient_coefficient, Rational) else Rational(
-        quotient_coefficient)) / (leading_coefficient if isinstance(leading_coefficient, Rational) else Rational(
-        leading_coefficient)) for quotient_coefficient in
-                       quotient_coefficients])
+    return Polynomial([quotient_coefficient / leading_coefficient for quotient_coefficient in quotient_coefficients])
