@@ -40,7 +40,7 @@ class Rational:
 
     def __add__(self, other):
         """ 實數加法 """
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, Rational):
             other = Rational(other)
         lcd = util.lcm((self.denominator, other.denominator))
         return Rational(self.numerator * (lcd // self.denominator) + other.numerator * (lcd // other.denominator), lcd)
@@ -54,7 +54,7 @@ class Rational:
 
     def __mul__(self, other):
         """ 實數乘法 """
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, Rational):
             other = Rational(other)
         reduction1 = util.gcd(self.numerator, other.denominator)
         reduction2 = util.gcd(self.denominator, other.numerator)
@@ -64,6 +64,11 @@ class Rational:
     def __truediv__(self, other):
         """ 實數除法 """
         return self.__mul__(other ** -1)
+
+    def __floordiv__(self, other):
+        """ 實數整除法 """
+        numerator, denominator = self.__truediv__(other).numerator_and_denominator()
+        return numerator // denominator
 
     def __pow__(self, power: int):
         """ 實數的整數次方 """
@@ -77,7 +82,7 @@ class Rational:
 
     def __eq__(self, other):
         """ 判斷實數是否相等 """
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, Rational):
             other = Rational(other)
         return self.numerator == other.numerator and self.denominator == other.denominator
 
@@ -96,3 +101,23 @@ class Rational:
     def get_denominator(self) -> int:
         """ 回傳分母 """
         return self.denominator
+
+    def __ge__(self, other):
+        if not isinstance(other, Rational):
+            other = Rational(other)
+        return self.numerator * other.denominator >= other.numerator * self.denominator
+
+    def __gt__(self, other):
+        if not isinstance(other, Rational):
+            other = Rational(other)
+        return self.numerator * other.denominator > other.numerator * self.denominator
+
+    def __le__(self, other):
+        if not isinstance(other, Rational):
+            other = Rational(other)
+        return self.numerator * other.denominator <= other.numerator * self.denominator
+
+    def __lt__(self, other):
+        if not isinstance(other, Rational):
+            other = Rational(other)
+        return self.numerator * other.denominator < other.numerator * self.denominator

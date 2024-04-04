@@ -8,7 +8,7 @@ def int_factorization(value: int, only_nature=False) -> set[int]:
     if value == 0:
         raise ValueError("0 has infinite factors.")
     factors: set[int] = set()
-    for i in range(1, int(value ** 0.5) + 1):
+    for i in range(1, int(abs(value) ** 0.5) + 1):
         if value % i == 0:
             factors.add(i)
             factors.add(abs(value // i))

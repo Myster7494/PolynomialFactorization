@@ -1,3 +1,3 @@
 import polynomial
 
-print(polynomial.polynomial_factorization(polynomial.Polynomial((1, 2, 1))))
+print(polynomial.polynomial_factorization(polynomial.Polynomial((2, -6, 5, -1))))
