@@ -37,21 +37,27 @@ class Monomial:
         return self.__str__()
 
     def __mul__(self, other):
+        if not isinstance(other, Monomial):
+            other = Monomial(other)
         return Monomial(self.coefficient * other.coefficient, self.degree + other.degree)
 
     def __imul__(self, other):
         return self.__mul__(other)
 
+    def __eq__(self, other):
+        return self.coefficient == other.coefficient and self.degree == other.degree
+
+
+class ArrangementEnum(Enum):
+    """ 多項式的排列方式 """
+    DESCENDING = 0
+    """ 降冪排列 """
+    ASCENDING = 1
+    """ 升冪排列 """
+
 
 class Polynomial:
     """ 任意整係數多項式 """
-
-    class ArrangementEnum(Enum):
-        """ 多項式的排列方式 """
-        DESCENDING = 0
-        """ 降冪排列 """
-        ASCENDING = 1
-        """ 升冪排列 """
 
     def __init__(self, coefficients: tuple[int | float | Rational, ...] | list[
         int | float | Rational] | int | float | Rational | None = None, monomial: Monomial = None,
@@ -64,11 +70,11 @@ class Polynomial:
         if coefficients is None and monomial is None:
             raise ValueError("At least one parameter is required.")
         if isinstance(coefficients, (tuple, list)):
-            if arrangement == self.ArrangementEnum.DESCENDING:
+            if arrangement == ArrangementEnum.DESCENDING:
                 coefficients = coefficients[::-1]
             while coefficients[-1] == 0:
                 coefficients = coefficients[:-1]
-            coefficients = [Rational(coefficient) for coefficient in coefficients]
+            coefficients = list(map(Rational, coefficients))
         elif monomial is not None:
             coefficients = [Rational(0)] * monomial.get_degree()
             coefficients.append(monomial.get_coefficient())
@@ -80,12 +86,13 @@ class Polynomial:
         return len(self.coefficients)
 
     def __str__(self) -> str:
-        _str = ""
+        _str = "("
         for i in range(len(self))[::-1]:
             if self.coefficients[i] != 0:
                 if self.coefficients[i] > 0 and i != self.get_degree():
                     _str += "+"
                 _str += str(self.get_monomial_by_degree(i))
+        _str += ")"
         return _str
 
     def __repr__(self) -> str:
@@ -160,6 +167,9 @@ class Polynomial:
         """ 轉換為單項式 """
         return Monomial(self.highest_degree_coefficient(), self.get_degree())
 
+    def __eq__(self, other):
+        return self.coefficients == other.coefficients
+
 
 class Quadratic(Polynomial):
     """ 二次整係數多項式 """
@@ -173,8 +183,9 @@ class Quadratic(Polynomial):
         NO_REAL_ROOT = 0
         """ 無實根 """
 
-    def __init__(self, a: int | float | Rational, b: int | float | Rational, c: int | float | Rational):
-        super().__init__((a, b, c))
+    def __init__(self, a: int | float | Rational, b: int | float | Rational, c: int | float | Rational,
+                 arrangement: ArrangementEnum = ArrangementEnum.DESCENDING):
+        super().__init__((a, b, c), arrangement=arrangement)
 
     def get_a(self) -> Rational:
         """ 回傳二次多項式的二次項係數 """
@@ -203,7 +214,72 @@ class Quadratic(Polynomial):
             return self.DiscriminantEnum.TWO_DIFFERENT_ROOTS
 
 
-def polynomial_factorization(polynomial: Polynomial) -> list[Monomial | Polynomial]:
+class Polynomials:
+    def __init__(self, polynomials: any = (),
+                 coefficient: Rational | Monomial | int | float = Rational(1)):
+        if not isinstance(coefficient, Monomial):
+            coefficient = Monomial(coefficient)
+        if isinstance(polynomials, (list, tuple)):
+            coefficient = coefficient
+            polynomials = list(polynomials)
+        elif isinstance(polynomials, Polynomial):
+            coefficient = coefficient
+            polynomials = [polynomials]
+        elif isinstance(polynomials, Monomial):
+            coefficient = coefficient * Monomial(polynomials.coefficient)
+            polynomials = [polynomials]
+        elif isinstance(polynomials, Polynomials):
+            coefficient = polynomials.get_coefficient() * coefficient
+            polynomials = list(polynomials.get_polynomials())
+        else:
+            raise ValueError("Unsupported type.")
+        polynomials.sort(key=lambda polynomial: (polynomial.get_degree(), polynomial.coefficients))
+        self.polynomials = polynomials
+        self.coefficient = coefficient
+
+    def __str__(self) -> str:
+        _str = str(self.coefficient) if self.coefficient != Monomial(1) else ""
+        count = 1
+        i = 0
+        while i < len(self.polynomials):
+            _str += str(self.polynomials[i])
+            while i < len(self.polynomials):
+                i += 1
+                if i >= len(self.polynomials) or self.polynomials[i] != self.polynomials[i - 1]:
+                    break
+                count += 1
+            if count > 1:
+                _str += f"^{count}"
+                count = 1
+        return _str
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def append(self, polynomial: Polynomial | Monomial):
+        self.polynomials.append(polynomial)
+        self.polynomials = sorted(self.polynomials,
+                                  key=lambda _polynomial: (_polynomial.get_degree(), _polynomial.coefficients))
+
+    def get_first_polynomial(self) -> Polynomial | None:
+        return self.polynomials[0] if len(self.polynomials) > 0 else None
+
+    def __add__(self, other):
+        if not isinstance(other, Polynomials):
+            other = Polynomials(other)
+        return Polynomials(list(self.polynomials) + list(other.polynomials), self.coefficient * other.coefficient)
+
+    def __iadd__(self, other):
+        return self.__add__(other)
+
+    def get_polynomials(self) -> tuple[Polynomial, ...]:
+        return tuple(self.polynomials)
+
+    def get_coefficient(self) -> Monomial:
+        return self.coefficient
+
+
+def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
     """
     因式分解多項式
 
@@ -213,36 +289,48 @@ def polynomial_factorization(polynomial: Polynomial) -> list[Monomial | Polynomi
     denominators: set[int] = {coefficient.get_denominator() for coefficient in polynomial.get_coefficients()}
     if denominators != {1}:
         if len(denominators) == 1:
-            return [Monomial(Rational(1, denominators.pop()))] + polynomial_factorization(
-                Polynomial([coefficient * denominators.pop() for coefficient in polynomial.get_coefficients()]))
-        denominators_lcm: int = util.lcm(denominators)
-        return [Monomial(Rational(1, denominators_lcm))] + polynomial_factorization(
-            Polynomial([coefficient * denominators_lcm for coefficient in polynomial.get_coefficients()]))
-
+            return Polynomials(polynomial_factorization(
+                Polynomial([coefficient * denominators.pop() for coefficient in polynomial.get_coefficients()],
+                           arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(1, denominators.pop())))
+        denominators_lcm: int = util.lcm(tuple(denominators))
+        return Polynomials(polynomial_factorization(
+            Polynomial([coefficient * denominators_lcm for coefficient in polynomial.get_coefficients()],
+                       arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(1, denominators_lcm)))
+    degree = 0
+    while polynomial.coefficients[degree] == 0:
+        degree += 1
+    if degree != 0:
+        polynomial.coefficients = polynomial.coefficients[degree:]
+    if len(polynomial) != 1:
+        _gcd = util.gcd([coefficient.get_numerator() for coefficient in polynomial.get_coefficients()])
+    else:
+        _gcd = 1
+    if polynomial.highest_degree_coefficient() < 0:
+        _gcd = -_gcd
+    for coefficient in polynomial.coefficients:
+        if _gcd != 1:
+            coefficient //= _gcd
+    if _gcd != 1 or degree != 0:
+        return Polynomials(
+            polynomial_factorization(
+                Polynomial([coefficient // _gcd for coefficient in polynomial.get_coefficients()],
+                           arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(1, _gcd), degree))
     highest_degree_coefficient_factors = util.int_factorization(polynomial.highest_degree_coefficient().get_numerator(),
                                                                 True)
     lowest_degree_coefficient_factors = util.int_factorization(polynomial.lowest_degree_coefficient().get_numerator())
-    polynomial_factors: list[Polynomial | Monomial] = []
+    polynomial_factors = Polynomials()
+    _found = False
     for factor1 in highest_degree_coefficient_factors:
         for factor2 in lowest_degree_coefficient_factors:
             if polynomial.test(-Rational(factor2, factor1)) and util.is_coprime(factor1, factor2):
                 polynomial_factors.append(Polynomial((factor1, factor2)))
+                _found = True
                 break
-        else:
-            continue
-        break
-    if not polynomial_factors:
+        if _found:
+            break
+    if polynomial_factors.get_first_polynomial() is None:
         if polynomial.is_monomial():
-            return [polynomial.to_monomial()]
-        return [polynomial]
-    polynomial_factors += polynomial_factorization(polynomial // polynomial_factors[0])
-    monomial = Monomial(1)
-    i = 0
-    while i < len(polynomial_factors):
-        if isinstance(polynomial_factors[i], Monomial):
-            monomial *= polynomial_factors.pop(i)
-        else:
-            i += 1
-    if monomial.get_coefficient() != 1 or monomial.get_degree() != 0:
-        polynomial_factors.insert(0, monomial)
+            return Polynomials(coefficient=polynomial.to_monomial())
+        return Polynomials(polynomial)
+    polynomial_factors += polynomial_factorization(polynomial // polynomial_factors.get_first_polynomial())
     return polynomial_factors

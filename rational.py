@@ -22,14 +22,14 @@ class Rational:
         elif isinstance(numerator, Rational) or isinstance(denominator, Rational):
             numerator, denominator = Rational(Rational(numerator) / Rational(denominator)).numerator_and_denominator()
         if not util.is_coprime(numerator, denominator):
-            reduction = util.gcd(numerator, denominator)
-            numerator //= reduction
-            denominator //= reduction
-        self.numerator = numerator
-        self.denominator = denominator
+            _gcd = util.gcd((numerator, denominator))
+            numerator //= _gcd
+            denominator //= _gcd
+        self.numerator = numerator if denominator > 0 else -numerator
+        self.denominator = abs(denominator)
 
     def __str__(self):
-        if self.denominator == 1:
+        if self.is_integer():
             if isinstance(self.numerator, float) and self.numerator.is_integer():
                 return str(int(self.numerator))
             return str(self.numerator)
@@ -56,10 +56,10 @@ class Rational:
         """ 實數乘法 """
         if not isinstance(other, Rational):
             other = Rational(other)
-        reduction1 = util.gcd(self.numerator, other.denominator)
-        reduction2 = util.gcd(self.denominator, other.numerator)
-        return Rational((self.numerator // reduction1) * (other.numerator // reduction2),
-                        (self.denominator // reduction2) * (other.denominator // reduction1))
+        _gcd1 = util.gcd((self.numerator, other.denominator))
+        _gcd2 = util.gcd((self.denominator, other.numerator))
+        return Rational((self.numerator // _gcd1) * (other.numerator // _gcd2),
+                        (self.denominator // _gcd2) * (other.denominator // _gcd1))
 
     def __truediv__(self, other):
         """ 實數除法 """

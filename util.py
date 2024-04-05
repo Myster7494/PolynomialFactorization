@@ -18,23 +18,26 @@ def int_factorization(value: int, only_nature=False) -> set[int]:
     return factors
 
 
-def gcd(value1: int, value2: int) -> int:
+def gcd(values: tuple[int, ...] | list[int]) -> int:
     """
-    求兩個 int value 的最大公因數
+    求最大公因數
 
-    :param value1: 第一個整數
-    :param value2: 第二個整數
+    :param values: 欲求最大公因數的所有整數
     """
-    if value2 == 0:
-        if value1 == 0:
-            raise ValueError("Both values are 0.")
-        return abs(value1)
-    return gcd(value2, value1 % value2)
+    if len(values) < 2:
+        raise ValueError("At least 2 values are required.")
+    if len(values) == 2:
+        if values[1] == 0:
+            if values[0] == 0:
+                raise ValueError("Both values are 0.")
+            return abs(values[0])
+        return gcd((values[1], values[0] % values[1]))
+    return gcd((values[0], gcd(values[1:])))
 
 
-def lcm(values: tuple[int, ...] | list[int] | set[int]) -> int:
+def lcm(values: tuple[int, ...] | list[int]) -> int:
     """
-    求兩個 int value 的最小公倍數
+    求最小公倍數
 
     :param values: 欲求最小公倍數的所有整數
     """
@@ -42,7 +45,7 @@ def lcm(values: tuple[int, ...] | list[int] | set[int]) -> int:
         raise ValueError("At least 2 values are required.")
 
     if len(values) == 2:
-        return abs(values[0] * values[1]) // gcd(values[0], values[1])
+        return abs(values[0] * values[1]) // gcd((values[0], values[1]))
     else:
         return lcm((values[0], lcm(values[1:])))
 
@@ -54,4 +57,4 @@ def is_coprime(value1: int, value2: int) -> bool:
     :param value1: 第一個整數
     :param value2: 第二個整數
     """
-    return gcd(value1, value2) == 1
+    return gcd((value1, value2)) == 1
