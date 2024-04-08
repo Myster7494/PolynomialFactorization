@@ -170,6 +170,9 @@ class Polynomial:
     def __eq__(self, other):
         return self.coefficients == other.coefficients
 
+    def __mul__(self,other):
+        pass
+
 
 class Quadratic(Polynomial):
     """ 二次整係數多項式 """
@@ -277,6 +280,9 @@ class Polynomials:
 
     def get_coefficient(self) -> Monomial:
         return self.coefficient
+
+def lagrange_polynomial():
+    pass
 
 
 def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
