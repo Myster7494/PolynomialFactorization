@@ -1,5 +1,3 @@
-from polynomial import Polynomial, polynomial_factorization
+from polynomial import lagrange_interpolation
 
-_polynomial = Polynomial((-1 / 2, -3 / 2, 0, 9 / 2, -11 / 2, -1, 5, -2))
-# print(_polynomial)
-print(polynomial_factorization(_polynomial))
+print(lagrange_interpolation(((1, 1), (2, 2), (3, 3))))

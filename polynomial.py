@@ -60,22 +60,23 @@ class Polynomial:
     """ 任意整係數多項式 """
 
     def __init__(self, coefficients: tuple[int | float | Rational, ...] | list[
-        int | float | Rational] | int | float | Rational | None = None, monomial: Monomial = None,
+        int | float | Rational] | int | float | Rational | Monomial = 0,
                  arrangement: ArrangementEnum = ArrangementEnum.DESCENDING):
         """
         任意整係數多項式
 
         預設為降冪排列
         """
-        if coefficients is None and monomial is None:
-            raise ValueError("At least one parameter is required.")
         if isinstance(coefficients, (tuple, list)):
             if arrangement == ArrangementEnum.DESCENDING:
                 coefficients = coefficients[::-1]
             while coefficients[-1] == 0:
                 coefficients = coefficients[:-1]
+                if len(coefficients) == 1:
+                    break
             coefficients = list(map(Rational, coefficients))
-        elif monomial is not None:
+        elif isinstance(coefficients, Monomial):
+            monomial = coefficients
             coefficients = [Rational(0)] * monomial.get_degree()
             coefficients.append(monomial.get_coefficient())
         else:
@@ -118,22 +119,20 @@ class Polynomial:
         """ 回傳多項式的 int degree 次項 """
         return Monomial(self.coefficients[degree], degree)
 
-    def test(self, value: Rational | int | float) -> bool:
+    def substitute(self, value: Rational | int | float) -> Rational:
         """ 測試 int value 代入後是否為 0 """
         result = Rational(0)
         for i, coefficient in enumerate(self.coefficients):
             result += coefficient * (value ** i)
-        return result == 0
+        return result
 
     def __floordiv__(self, other):
         """
         進行綜合除法，回傳商式
         :return: 商式
         """
-        if not isinstance(other, (Polynomial, Monomial)):
-            raise TypeError("Unsupported type.")
-        if isinstance(other, Monomial):
-            other = Polynomial(monomial=other)
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
         if self.get_degree() < other.get_degree():
             return Polynomial(0)
         dividend_coefficients = self.coefficients[::-1]
@@ -170,8 +169,37 @@ class Polynomial:
     def __eq__(self, other):
         return self.coefficients == other.coefficients
 
-    def __mul__(self,other):
-        pass
+    def __mul__(self, other):
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
+        result = Polynomial()
+        for i, coefficient1 in enumerate(self.coefficients):
+            for j, coefficient2 in enumerate(other.coefficients):
+                result += Monomial(coefficient1 * coefficient2, i + j)
+        return result
+
+    def __imul__(self, other):
+        return self.__mul__(other)
+
+    def __add__(self, other):
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
+        result = Polynomial()
+        result.coefficients = [Rational(0)] * max(len(self), len(other))
+        for i in range(max(len(self), len(other))):
+            if i <= self.get_degree():
+                result.coefficients[i] += self.coefficients[i]
+            if i <= other.get_degree():
+                result.coefficients[i] += other.coefficients[i]
+        return result
+
+    def __iadd__(self, other):
+        return self.__add__(other)
+
+    def __truediv__(self, other):
+        if not isinstance(other, Rational):
+            other = Rational(other)
+        return Polynomial([coefficient / other for coefficient in self.coefficients])
 
 
 class Quadratic(Polynomial):
@@ -281,8 +309,24 @@ class Polynomials:
     def get_coefficient(self) -> Monomial:
         return self.coefficient
 
-def lagrange_polynomial():
-    pass
+
+def lagrange_interpolation(
+        points: tuple[tuple[int, int] | list[int], ...] | list[tuple[int, int] | list[int]]) -> Polynomial:
+    """
+    拉格朗日插值法
+
+    :param points: 所有點的座標
+    :return: 插值多項式
+    """
+    result = Polynomial()
+    for i in range(len(points)):
+        basis_polynomial = Polynomial()
+        for j in range(len(points)):
+            if i == j:
+                continue
+            basis_polynomial *= Polynomial((1, -points[j][0])) / Rational(points[i][0] - points[j][0])
+        result += basis_polynomial
+    return result
 
 
 def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
@@ -328,7 +372,7 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
     _found = False
     for factor1 in highest_degree_coefficient_factors:
         for factor2 in lowest_degree_coefficient_factors:
-            if polynomial.test(-Rational(factor2, factor1)) and util.is_coprime(factor1, factor2):
+            if polynomial.substitute(-Rational(factor2, factor1)) == 0 and util.is_coprime(factor1, factor2):
                 polynomial_factors.append(Polynomial((factor1, factor2)))
                 _found = True
                 break
