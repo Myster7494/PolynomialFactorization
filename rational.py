@@ -33,7 +33,7 @@ class Rational:
             if isinstance(self.numerator, float) and self.numerator.is_integer():
                 return str(int(self.numerator))
             return str(self.numerator)
-        return f"{self.numerator}/{self.denominator}"
+        return f"({self.numerator}/{self.denominator})" if self > 0 else f"-({-self.numerator}/{self.denominator})"
 
     def __repr__(self):
         return self.__str__()
@@ -67,6 +67,8 @@ class Rational:
 
     def __floordiv__(self, other):
         """ 實數整除法 """
+        if isinstance(other, int) and self.is_integer():
+            return self.numerator // other
         numerator, denominator = self.__truediv__(other).numerator_and_denominator()
         return numerator // denominator
 
@@ -101,6 +103,12 @@ class Rational:
     def get_denominator(self) -> int:
         """ 回傳分母 """
         return self.denominator
+
+    def to_int(self) -> int:
+        """ 轉換為整數 """
+        if self.is_integer():
+            return self.numerator
+        raise ValueError("Can't convert to integer.")
 
     def __ge__(self, other):
         if not isinstance(other, Rational):

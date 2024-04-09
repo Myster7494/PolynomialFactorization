@@ -1,3 +1,5 @@
-from polynomial import lagrange_interpolation
+from polynomial import Polynomial
 
-print(lagrange_interpolation(((1, 1), (2, 2), (3, 3))))
+polynomial1 = Polynomial([2, 6, 6, 2])
+polynomial2 = Polynomial([1])
+print(polynomial1.is_divisible(polynomial2))
