@@ -297,6 +297,8 @@ class Polynomials:
         self.coefficient = coefficient
 
     def __str__(self) -> str:
+        if len(self.polynomials) == 0:
+            return str(self.coefficient)
         _str = str(self.coefficient) if self.coefficient != Monomial(1) else ""
         count = 1
         i = 0
@@ -412,7 +414,7 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
         return Polynomials(coefficient=polynomial.to_monomial())
     if polynomial.get_degree() < 4:
         return Polynomials(polynomial)
-    test_list: list[tuple[int, set[int]]] = [
+    test_list: list[tuple[int, list[int]]] = [
         (0, int_factorization(polynomial.lowest_degree_coefficient().to_int())),
         (1, int_factorization(polynomial.substitute(1).to_int()))]
     for i in range(2, polynomial.get_degree() // 2 + 1):
@@ -420,10 +422,23 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
             test_list.append((-(i // 2), int_factorization(polynomial.substitute(-(i // 2)).to_int())))
         else:
             test_list.append((i // 2 + 1, int_factorization(polynomial.substitute(i // 2 + 1).to_int())))
-    
-    for (x, possible_y) in test_list:
-        for y in possible_y:
-            if polynomial.substitute(Rational(x, y)) == 0 and is_coprime(x, y):
-                polynomial_factors.append(Polynomial((y, x)))
-                polynomial_factors += polynomial_factorization(polynomial // polynomial_factors.get_first_polynomial())
-                return polynomial_factors
+        test_point_index: list[int] = [0] * len(test_list)
+        while test_point_index[-1] != len(test_list[-1][1]):
+            test_points = []
+            for j in range(len(test_list)):
+                test_points.append((test_list[j][0], test_list[j][1][test_point_index[j]]))
+            try:
+                lagrange_polynomial = lagrange_interpolation(test_points)
+                if lagrange_polynomial.highest_degree_coefficient() > 0 and polynomial.is_divisible(
+                        lagrange_polynomial):
+                    polynomial_factors.append(lagrange_polynomial)
+                    polynomial_factors += polynomial_factorization(polynomial // lagrange_polynomial)
+                    return polynomial_factors
+            except ValueError:
+                pass
+            test_point_index[0] += 1
+            for j in range(len(test_list) - 1):
+                if test_point_index[j] == len(test_list[j][1]):
+                    test_point_index[j] = 0
+                    test_point_index[j + 1] += 1
+    return Polynomials(polynomial)

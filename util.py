@@ -1,4 +1,4 @@
-def int_factorization(value: int, only_nature=False) -> set[int]:
+def int_factorization(value: int, only_nature=False) -> list[int]:
     """
     傳入一個 int value，回傳 value 的所有因數
 
@@ -15,7 +15,7 @@ def int_factorization(value: int, only_nature=False) -> set[int]:
             if not only_nature:
                 factors.add(-i)
                 factors.add(-abs(value // i))
-    return factors
+    return sorted(list(factors))
 
 
 def gcd(values: tuple[int, ...] | list[int]) -> int:

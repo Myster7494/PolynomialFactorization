@@ -1,5 +1,5 @@
-from polynomial import Polynomial
+from polynomial import Polynomial, polynomial_factorization
 
-polynomial1 = Polynomial([2, 6, 6, 2])
+polynomial1 = Polynomial([1, -5, 4, 5, 1])
 polynomial2 = Polynomial([1])
-print(polynomial1.is_divisible(polynomial2))
+print(polynomial_factorization(polynomial1))
