@@ -355,8 +355,8 @@ def lagrange_interpolation(
         for j in range(len(points)):
             if i == j:
                 continue
-            if points[i][1] == points[j][1]:
-                raise ValueError("The y positions of the points must be different.")
+            if points[i][0] == points[j][0]:
+                raise ValueError("The x positions of the points must be different.")
             basis_polynomial *= Polynomial((1, -Rational(points[j][0]))) / Rational(points[i][0] - points[j][0])
         result += basis_polynomial * points[i][1]
     return result
@@ -422,20 +422,19 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
             test_list.append((-(i // 2), int_factorization(polynomial.substitute(-(i // 2)).to_int())))
         else:
             test_list.append((i // 2 + 1, int_factorization(polynomial.substitute(i // 2 + 1).to_int())))
+        print(test_list)
         test_point_index: list[int] = [0] * len(test_list)
         while test_point_index[-1] != len(test_list[-1][1]):
             test_points = []
             for j in range(len(test_list)):
                 test_points.append((test_list[j][0], test_list[j][1][test_point_index[j]]))
-            try:
                 lagrange_polynomial = lagrange_interpolation(test_points)
+                print(lagrange_polynomial)
                 if lagrange_polynomial.highest_degree_coefficient() > 0 and polynomial.is_divisible(
                         lagrange_polynomial):
                     polynomial_factors.append(lagrange_polynomial)
                     polynomial_factors += polynomial_factorization(polynomial // lagrange_polynomial)
                     return polynomial_factors
-            except ValueError:
-                pass
             test_point_index[0] += 1
             for j in range(len(test_list) - 1):
                 if test_point_index[j] == len(test_list[j][1]):
