@@ -325,6 +325,9 @@ class Polynomials:
     def get_first_polynomial(self) -> Polynomial | None:
         return self.polynomials[0] if len(self.polynomials) > 0 else None
 
+    def get_last_polynomial(self) -> Polynomial | None:
+        return self.polynomials[-1] if len(self.polynomials) > 0 else None
+
     def __add__(self, other):
         if not isinstance(other, Polynomials):
             other = Polynomials(other)
@@ -338,6 +341,39 @@ class Polynomials:
 
     def get_coefficient(self) -> Monomial:
         return self.coefficient
+
+
+def grouping_by_common_factor(polynomial: Polynomial) -> Polynomials:
+    """
+    提公因式
+
+    :param polynomial: 欲提取公因式的多項式
+    :return: 公因式和提取後的多項式
+    """
+    denominators: set[int] = {coefficient.get_denominator() for coefficient in polynomial.get_coefficients()}
+    if denominators != {1}:
+        if len(denominators) == 1:
+            return Polynomials(grouping_by_common_factor(
+                Polynomial([coefficient * denominators.pop() for coefficient in polynomial.get_coefficients()],
+                           arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(1, denominators.pop())))
+        denominators_lcm: int = lcm(tuple(denominators))
+        return Polynomials(grouping_by_common_factor(
+            Polynomial([coefficient * denominators_lcm for coefficient in polynomial.get_coefficients()],
+                       arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(1, denominators_lcm)))
+    degree = 0
+    while polynomial.coefficients[degree] == 0:
+        degree += 1
+    polynomial.coefficients = polynomial.coefficients[degree:]
+    _gcd = gcd([coefficient.to_int() for coefficient in polynomial.get_coefficients()])
+    if polynomial.highest_degree_coefficient() < 0:
+        _gcd = -_gcd
+    if _gcd != 1 or degree != 0:
+        return Polynomials(Polynomial([coefficient // _gcd for coefficient in polynomial.get_coefficients()],
+                                      arrangement=ArrangementEnum.ASCENDING), Monomial(Rational(_gcd), degree))
+    return Polynomials(polynomial)
+
+
+# def linear_factor_test(polynomial: Polynomial) -> Polynomials:
 
 
 def lagrange_interpolation(
@@ -369,35 +405,13 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
     :param polynomial: 欲因式分解的多項式
     :return: 因式分解的結果
     """
-    denominators: set[int] = {coefficient.get_denominator() for coefficient in polynomial.get_coefficients()}
-    if denominators != {1}:
-        if len(denominators) == 1:
-            return Polynomials(polynomial_factorization(
-                Polynomial([coefficient * denominators.pop() for coefficient in polynomial.get_coefficients()],
-                           arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(1, denominators.pop())))
-        denominators_lcm: int = lcm(tuple(denominators))
-        return Polynomials(polynomial_factorization(
-            Polynomial([coefficient * denominators_lcm for coefficient in polynomial.get_coefficients()],
-                       arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(1, denominators_lcm)))
-    degree = 0
-    while polynomial.coefficients[degree] == 0:
-        degree += 1
-    if degree != 0:
-        polynomial.coefficients = polynomial.coefficients[degree:]
-    _gcd = 1
-    if polynomial.get_degree() != 0 and not polynomial.is_monomial():
-        _gcd = gcd([coefficient.get_numerator() for coefficient in polynomial.get_coefficients()])
-    if polynomial.highest_degree_coefficient() < 0:
-        _gcd = -_gcd
-    if _gcd != 1 or degree != 0:
-        return Polynomials(
-            polynomial_factorization(
-                Polynomial([coefficient // _gcd for coefficient in polynomial.get_coefficients()],
-                           arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(_gcd), degree))
-    highest_degree_coefficient_factors = int_factorization(polynomial.highest_degree_coefficient().get_numerator(),
+    polynomial_factors = grouping_by_common_factor(polynomial)  # 嘗試提公因式
+
+    # 嘗試一次因式檢驗法
+    highest_degree_coefficient_factors = int_factorization(polynomial.highest_degree_coefficient().to_int(),
                                                            True)
-    lowest_degree_coefficient_factors = int_factorization(polynomial.lowest_degree_coefficient().get_numerator())
-    polynomial_factors = Polynomials()
+    lowest_degree_coefficient_factors = int_factorization(polynomial.lowest_degree_coefficient().to_int())
+
     _found = False
     for factor1 in highest_degree_coefficient_factors:
         for factor2 in lowest_degree_coefficient_factors:
@@ -407,13 +421,15 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
                 break
         if _found:
             break
+
     if _found:
         polynomial_factors += polynomial_factorization(polynomial // polynomial_factors.get_first_polynomial())
         return polynomial_factors
-    if polynomial.is_monomial():
-        return Polynomials(coefficient=polynomial.to_monomial())
+
     if polynomial.get_degree() < 4:
         return Polynomials(polynomial)
+
+    # 嘗試拉格朗日插值法
     test_list: list[tuple[int, list[int]]] = [
         (0, int_factorization(polynomial.lowest_degree_coefficient().to_int())),
         (1, int_factorization(polynomial.substitute(1).to_int()))]
@@ -422,19 +438,17 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
             test_list.append((-(i // 2), int_factorization(polynomial.substitute(-(i // 2)).to_int())))
         else:
             test_list.append((i // 2 + 1, int_factorization(polynomial.substitute(i // 2 + 1).to_int())))
-        print(test_list)
         test_point_index: list[int] = [0] * len(test_list)
         while test_point_index[-1] != len(test_list[-1][1]):
             test_points = []
             for j in range(len(test_list)):
                 test_points.append((test_list[j][0], test_list[j][1][test_point_index[j]]))
-                lagrange_polynomial = lagrange_interpolation(test_points)
-                print(lagrange_polynomial)
-                if lagrange_polynomial.highest_degree_coefficient() > 0 and polynomial.is_divisible(
-                        lagrange_polynomial):
-                    polynomial_factors.append(lagrange_polynomial)
-                    polynomial_factors += polynomial_factorization(polynomial // lagrange_polynomial)
-                    return polynomial_factors
+            lagrange_polynomial = lagrange_interpolation(test_points)
+            if lagrange_polynomial.get_degree() > 1 and polynomial.is_divisible(
+                    lagrange_polynomial):
+                polynomial_factors += grouping_by_common_factor(lagrange_polynomial)
+                polynomial_factors += polynomial_factorization(polynomial // polynomial_factors.get_last_polynomial())
+                return polynomial_factors
             test_point_index[0] += 1
             for j in range(len(test_list) - 1):
                 if test_point_index[j] == len(test_list[j][1]):
