@@ -11,6 +11,14 @@ class Rational:
         :param numerator: 分子
         :param denominator: 分母，預設為 1
         """
+        if isinstance(numerator, str):
+            if "/" in numerator:
+                numerator, denominator = map(Rational, numerator.split("/"))
+            else:
+                try:
+                    numerator = float(numerator)
+                except ValueError:
+                    raise ValueError("Invalid input.")
         if not isinstance(numerator, (int, float, Rational)) or not isinstance(denominator, (int, float, Rational)):
             raise TypeError("Numerator or denominator type unsupported.Only support int, float and Rational.")
         if denominator == 0:

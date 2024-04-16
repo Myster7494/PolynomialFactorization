@@ -26,8 +26,12 @@ class Monomial:
         return self.degree
 
     def __str__(self) -> str:
-        _str = str(self.coefficient) if self.coefficient != 1 or self.degree == 0 else ""
+        _str = str(self.coefficient)
         if self.degree != 0:
+            if self.coefficient == 1:
+                _str = ""
+            elif self.coefficient == -1:
+                _str = "-"
             _str += "x"
             if self.degree != 1:
                 _str += f"^{self.degree}"
@@ -57,7 +61,7 @@ class ArrangementEnum(Enum):
 
 
 class Polynomial:
-    """ 任意整係數多項式 """
+    """ 實數多項式 """
 
     def __init__(self, coefficients: tuple[int | float | Rational, ...] | list[
         int | float | Rational] | int | float | Rational | Monomial = 0,
@@ -317,24 +321,23 @@ class Polynomials:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def append(self, polynomial: Polynomial | Monomial):
+    def append(self, polynomial: Polynomial):
         self.polynomials.append(polynomial)
-        self.polynomials = sorted(self.polynomials,
-                                  key=lambda _polynomial: (_polynomial.get_degree(), _polynomial.coefficients))
+        self.polynomials.sort(key=lambda _polynomial: (_polynomial.get_degree(), _polynomial.coefficients))
+        return polynomial
 
-    def get_first_polynomial(self) -> Polynomial | None:
-        return self.polynomials[0] if len(self.polynomials) > 0 else None
+    def get_only_polynomial(self) -> Polynomial | None:
+        if len(self.polynomials) == 1:
+            return self.polynomials[0]
+        raise ValueError("There are not only one polynomial in the polynomials.")
 
-    def get_last_polynomial(self) -> Polynomial | None:
-        return self.polynomials[-1] if len(self.polynomials) > 0 else None
-
-    def __add__(self, other):
+    def __mul__(self, other):
         if not isinstance(other, Polynomials):
             other = Polynomials(other)
         return Polynomials(self.polynomials + other.polynomials, self.coefficient * other.coefficient)
 
-    def __iadd__(self, other):
-        return self.__add__(other)
+    def __imul__(self, other):
+        return self.__mul__(other)
 
     def get_polynomials(self) -> tuple[Polynomial, ...]:
         return tuple(self.polynomials)
@@ -398,33 +401,22 @@ def lagrange_interpolation(
     return result
 
 
-def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
-    """
-    因式分解多項式
-
-    :param polynomial: 欲因式分解的多項式
-    :return: 因式分解的結果
-    """
-    polynomial_factors = grouping_by_common_factor(polynomial)  # 嘗試提公因式
-
+def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
+    if polynomial.is_monomial():
+        return Polynomials(coefficient=polynomial.to_monomial())
+    polynomial_factors = Polynomials()
     # 嘗試一次因式檢驗法
     highest_degree_coefficient_factors = int_factorization(polynomial.highest_degree_coefficient().to_int(),
                                                            True)
     lowest_degree_coefficient_factors = int_factorization(polynomial.lowest_degree_coefficient().to_int())
 
-    _found = False
     for factor1 in highest_degree_coefficient_factors:
         for factor2 in lowest_degree_coefficient_factors:
             if polynomial.substitute(-Rational(factor2, factor1)) == 0 and is_coprime(factor1, factor2):
-                polynomial_factors.append(Polynomial((factor1, factor2)))
-                _found = True
-                break
-        if _found:
-            break
-
-    if _found:
-        polynomial_factors += polynomial_factorization(polynomial // polynomial_factors.get_first_polynomial())
-        return polynomial_factors
+                factor = Polynomial((factor1, factor2))
+                polynomial_factors.append(factor)
+                polynomial_factors *= polynomial_factor_test(polynomial // factor)
+                return polynomial_factors
 
     if polynomial.get_degree() < 4:
         return Polynomials(polynomial)
@@ -439,19 +431,46 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
         else:
             test_list.append((i // 2 + 1, int_factorization(polynomial.substitute(i // 2 + 1).to_int())))
         test_point_index: list[int] = [0] * len(test_list)
+        tested_result: list[tuple[Polynomial, bool]] = []
         while test_point_index[-1] != len(test_list[-1][1]):
             test_points = []
             for j in range(len(test_list)):
                 test_points.append((test_list[j][0], test_list[j][1][test_point_index[j]]))
             lagrange_polynomial = lagrange_interpolation(test_points)
-            if lagrange_polynomial.get_degree() > 1 and polynomial.is_divisible(
-                    lagrange_polynomial):
-                polynomial_factors += grouping_by_common_factor(lagrange_polynomial)
-                polynomial_factors += polynomial_factorization(polynomial // polynomial_factors.get_last_polynomial())
-                return polynomial_factors
+            if lagrange_polynomial.get_degree() == i:
+                lagrange_polynomial = grouping_by_common_factor(lagrange_polynomial).get_only_polynomial()
+                _found = False
+                divisible = False
+                for tested_polynomial, result in tested_result:
+                    if tested_polynomial == lagrange_polynomial:
+                        _found = True
+                        divisible = result
+                        break
+                if not _found:
+                    divisible = polynomial.is_divisible(lagrange_polynomial)
+                    tested_result.append((lagrange_polynomial, divisible))
+                if divisible:
+                    polynomial_factors.append(lagrange_polynomial)
+                    polynomial_factors *= polynomial_factor_test(polynomial // lagrange_polynomial)
+                    return polynomial_factors
             test_point_index[0] += 1
             for j in range(len(test_list) - 1):
                 if test_point_index[j] == len(test_list[j][1]):
                     test_point_index[j] = 0
                     test_point_index[j + 1] += 1
     return Polynomials(polynomial)
+
+
+def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
+    """
+    因式分解多項式
+
+    :param polynomial: 欲因式分解的多項式
+    :return: 因式分解的結果
+    """
+    polynomial_factors = grouping_by_common_factor(polynomial)  # 嘗試提公因式
+    if polynomial_factors.get_only_polynomial().get_degree() > 1:
+        polynomial_factors = polynomial_factor_test(
+            polynomial_factors.get_only_polynomial()) * Polynomials(
+            coefficient=polynomial_factors.get_coefficient())  # 嘗試一次因式檢驗法和拉格朗日插值法
+    return polynomial_factors
