@@ -5,7 +5,7 @@ from util import int_factorization, gcd, lcm, is_coprime
 
 
 class Monomial:
-    """ 任意整係數單項式 """
+    """ 任意實數單項式 """
 
     def __init__(self, coefficient: int | float | Rational = 0, degree: int = 0):
         """
@@ -26,6 +26,7 @@ class Monomial:
         return self.degree
 
     def __str__(self) -> str:
+        """ 輸出單項式 """
         _str = str(self.coefficient)
         if self.degree != 0:
             if self.coefficient == 1:
@@ -38,17 +39,21 @@ class Monomial:
         return _str
 
     def __repr__(self) -> str:
+        """ 輸出單項式 """
         return self.__str__()
 
     def __mul__(self, other):
+        """ 單項式乘法 """
         if not isinstance(other, Monomial):
             other = Monomial(other)
         return Monomial(self.coefficient * other.coefficient, self.degree + other.degree)
 
     def __imul__(self, other):
+        """ 單項式乘法 """
         return self.__mul__(other)
 
     def __eq__(self, other):
+        """ 單項式比較 """
         return self.coefficient == other.coefficient and self.degree == other.degree
 
 
@@ -88,9 +93,11 @@ class Polynomial:
         self.coefficients = coefficients
 
     def __len__(self) -> int:
+        """ 回傳多項式的項數"""
         return len(self.coefficients)
 
     def __str__(self) -> str:
+        """ 輸出多項式 """
         _str = "("
         for i in range(len(self))[::-1]:
             if self.coefficients[i] != 0:
@@ -101,6 +108,7 @@ class Polynomial:
         return _str
 
     def __repr__(self) -> str:
+        """ 輸出多項式 """
         return self.__str__()
 
     def get_coefficients(self) -> tuple[Rational, ...]:
@@ -131,10 +139,7 @@ class Polynomial:
         return result
 
     def __floordiv__(self, other):
-        """
-        進行綜合除法，回傳商式
-        :return: 商式
-        """
+        """ 進行綜合除法，回傳商式 """
         if not isinstance(other, Polynomial):
             other = Polynomial(other)
         if self.get_degree() < other.get_degree():
@@ -157,9 +162,11 @@ class Polynomial:
             [quotient_coefficient / leading_coefficient for quotient_coefficient in quotient_coefficients])
 
     def __ifloordiv__(self, other):
+        """ 進行綜合除法，回傳商式 """
         return self.__floordiv__(other)
 
     def is_divisible(self, divisor: any) -> bool:
+        """ 判斷是否能被整除 """
         if isinstance(divisor, (int, float, Rational)) or (
                 isinstance(divisor, (Monomial, Polynomial)) and divisor.get_degree() == 0):
             return True
@@ -179,27 +186,27 @@ class Polynomial:
         return Monomial(self.highest_degree_coefficient(), self.get_degree())
 
     def __eq__(self, other):
+        """ 判斷多項式是否相等 """
         if not isinstance(other, Polynomial):
             other = Polynomial(other)
         return self.coefficients == other.coefficients
 
     def __mul__(self, other):
-        if isinstance(other, (int, float, Rational)):
-            return Polynomial([coefficient * other for coefficient in self.coefficients],
-                              arrangement=ArrangementEnum.ASCENDING)
-        else:  # 若無此else，PyCharm會提示other類型錯誤，但實則無此錯誤
-            if not isinstance(other, Polynomial):
-                other = Polynomial(other)
-            result = Polynomial()
-            for i, coefficient1 in enumerate(self.coefficients):
-                for j, coefficient2 in enumerate(other.coefficients):
-                    result += Monomial(coefficient1 * coefficient2, i + j)
-            return result
+        """ 多項式乘法 """
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
+        result = Polynomial()
+        for i, coefficient1 in enumerate(self.coefficients):
+            for j, coefficient2 in enumerate(other.coefficients):
+                result += Monomial(coefficient1 * coefficient2, i + j)
+        return result
 
     def __imul__(self, other):
+        """ 多項式乘法 """
         return self.__mul__(other)
 
     def __add__(self, other):
+        """ 多項式加法 """
         if not isinstance(other, Polynomial):
             other = Polynomial(other)
         result = Polynomial()
@@ -216,65 +223,27 @@ class Polynomial:
         return result
 
     def __iadd__(self, other):
+        """ 多項式加法 """
         return self.__add__(other)
 
     def __sub__(self, other):
+        """ 多項式減法 """
         return self.__add__(-other)
 
     def __isub__(self, other):
+        """ 多項式減法 """
         return self.__sub__(other)
 
     def __truediv__(self, other):
+        """ 多項式係數真除法 """
         if not isinstance(other, Rational):
             other = Rational(other)
         return Polynomial([coefficient / other for coefficient in self.coefficients],
                           arrangement=ArrangementEnum.ASCENDING)
 
     def __neg__(self):
-        return Polynomial([-coefficient for coefficient in self.coefficients], arrangement=ArrangementEnum.ASCENDING)
-
-
-class Quadratic(Polynomial):
-    """ 二次整係數多項式 """
-
-    class DiscriminantEnum(Enum):
-        """ 判別式的結果 """
-        TWO_SAME_ROOTS = 2
-        """ 重實根 """
-        TWO_DIFFERENT_ROOTS = 1
-        """ 兩相異實根 """
-        NO_REAL_ROOT = 0
-        """ 無實根 """
-
-    def __init__(self, a: int | float | Rational, b: int | float | Rational, c: int | float | Rational,
-                 arrangement: ArrangementEnum = ArrangementEnum.DESCENDING):
-        super().__init__((a, b, c), arrangement=arrangement)
-
-    def get_a(self) -> Rational:
-        """ 回傳二次多項式的二次項係數 """
-        return self.coefficients[2]
-
-    def get_b(self) -> Rational:
-        """ 回傳二次多項式的一次項係數 """
-        return self.coefficients[1]
-
-    def get_c(self) -> Rational:
-        """ 回傳二次多項式的常數項 """
-        return self.coefficients[0]
-
-    def discriminant(self) -> DiscriminantEnum:
-        """
-        回傳判別式的結果
-
-        :return: 判別式的結果
-        """
-        result = self.get_b() ** 2 - Rational(4) * self.get_a() * self.get_c()
-        if result < 0:
-            return self.DiscriminantEnum.NO_REAL_ROOT
-        if result == 0:
-            return self.DiscriminantEnum.TWO_SAME_ROOTS
-        if result > 0:
-            return self.DiscriminantEnum.TWO_DIFFERENT_ROOTS
+        """ 多項式變號 """
+        return self * Polynomial(-1)
 
 
 class Polynomials:
@@ -356,13 +325,11 @@ def grouping_by_common_factor(polynomial: Polynomial) -> Polynomials:
     denominators: set[int] = {coefficient.get_denominator() for coefficient in polynomial.get_coefficients()}
     if denominators != {1}:
         if len(denominators) == 1:
-            return Polynomials(grouping_by_common_factor(
-                Polynomial([coefficient * denominators.pop() for coefficient in polynomial.get_coefficients()],
-                           arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(1, denominators.pop())))
+            return Polynomials(grouping_by_common_factor(polynomial * Polynomial(denominators.pop())),
+                               Monomial(Rational(1, denominators.pop())))
         denominators_lcm: int = lcm(tuple(denominators))
-        return Polynomials(grouping_by_common_factor(
-            Polynomial([coefficient * denominators_lcm for coefficient in polynomial.get_coefficients()],
-                       arrangement=ArrangementEnum.ASCENDING)), Monomial(Rational(1, denominators_lcm)))
+        return Polynomials(grouping_by_common_factor(polynomial * Polynomial(denominators_lcm)),
+                           Monomial(Rational(1, denominators_lcm)))
     degree = 0
     while polynomial.coefficients[degree] == 0:
         degree += 1
@@ -371,8 +338,7 @@ def grouping_by_common_factor(polynomial: Polynomial) -> Polynomials:
     if polynomial.highest_degree_coefficient() < 0:
         _gcd = -_gcd
     if _gcd != 1 or degree != 0:
-        return Polynomials(Polynomial([coefficient // _gcd for coefficient in polynomial.get_coefficients()],
-                                      arrangement=ArrangementEnum.ASCENDING), Monomial(Rational(_gcd), degree))
+        return Polynomials(polynomial / _gcd, Monomial(Rational(_gcd), degree))
     return Polynomials(polynomial)
 
 
@@ -397,7 +363,7 @@ def lagrange_interpolation(
             if points[i][0] == points[j][0]:
                 raise ValueError("The x positions of the points must be different.")
             basis_polynomial *= Polynomial((1, -Rational(points[j][0]))) / Rational(points[i][0] - points[j][0])
-        result += basis_polynomial * points[i][1]
+        result += basis_polynomial * Polynomial(points[i][1])
     return result
 
 
