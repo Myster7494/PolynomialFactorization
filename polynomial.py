@@ -1,7 +1,7 @@
 from enum import Enum
 
 from rational import Rational
-from util import int_factorization, gcd, lcm, is_coprime
+from util import int_factorization, gcd, lcm
 
 
 class Monomial:
@@ -394,7 +394,7 @@ def grouping_by_common_factor(polynomial: Polynomial) -> Polynomials:
     :return: 公因式和提取後的多項式
     """
     denominators: set[int] = {coefficient.get_denominator() for coefficient in polynomial.get_coefficients()}
-    if denominators != {1}:
+    if denominators != {1}:  # 檢查是否為整係數多項式
         if len(denominators) == 1:
             return Polynomials(grouping_by_common_factor(polynomial * Polynomial(denominators.pop())),
                                Monomial(Rational(1, denominators.pop())))
@@ -406,14 +406,11 @@ def grouping_by_common_factor(polynomial: Polynomial) -> Polynomials:
         degree += 1
     polynomial.coefficients = polynomial.coefficients[degree:]
     _gcd = gcd([coefficient.to_int() for coefficient in polynomial.get_coefficients()])
-    if polynomial.highest_degree_coefficient() < 0:
+    if polynomial.highest_degree_coefficient() < 0:  # 提出領導係數的負號
         _gcd = -_gcd
     if _gcd != 1 or degree != 0:
         return Polynomials(polynomial / _gcd, Monomial(Rational(_gcd), degree))
     return Polynomials(polynomial)
-
-
-# def linear_factor_test(polynomial: Polynomial) -> Polynomials:
 
 
 def lagrange_interpolation(
@@ -457,12 +454,14 @@ def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
 
     for factor1 in highest_degree_coefficient_factors:
         for factor2 in lowest_degree_coefficient_factors:
-            if polynomial.substitute(-Rational(factor2, factor1)) == 0 and is_coprime(factor1, factor2):
-                factor = Polynomial((factor1, factor2))
+            if polynomial.substitute(-Rational(factor2, factor1)) == 0:
+                _gcd = gcd((factor1, factor2))
+                factor = Polynomial((factor1 // _gcd, factor2 // _gcd))
                 polynomial_factors.append(factor)
                 polynomial_factors *= polynomial_factor_test(polynomial // factor)
                 return polynomial_factors
 
+    # 若多項式次數小於 4，則其因式必有一個是一次因式
     if polynomial.get_degree() < 4:
         return Polynomials(polynomial)
 
