@@ -5,11 +5,11 @@ from util import int_factorization, gcd, lcm, is_coprime
 
 
 class Monomial:
-    """ 任意實數單項式 """
+    """ 任意有理數單項式 """
 
     def __init__(self, coefficient: int | float | Rational = 0, degree: int = 0):
         """
-        任意整係數單項式
+        任意有理係數單項式
 
         :param coefficient: 係數
         :param degree: 次數
@@ -17,15 +17,7 @@ class Monomial:
         self.coefficient = Rational(coefficient)
         self.degree = degree
 
-    def get_coefficient(self) -> Rational:
-        """ 回傳單項式的係數 """
-        return self.coefficient
-
-    def get_degree(self) -> int:
-        """ 回傳單項式的次數 """
-        return self.degree
-
-    def __str__(self) -> str:
+    def __str__(self):
         """ 輸出單項式 """
         _str = str(self.coefficient)
         if self.degree != 0:
@@ -38,7 +30,7 @@ class Monomial:
                 _str += f"^{self.degree}"
         return _str
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         """ 輸出單項式 """
         return self.__str__()
 
@@ -53,12 +45,29 @@ class Monomial:
         return self.__mul__(other)
 
     def __eq__(self, other):
-        """ 單項式比較 """
+        """ 判斷單項式是否相等 """
         return self.coefficient == other.coefficient and self.degree == other.degree
+
+    def get_coefficient(self) -> Rational:
+        """
+        回傳單項式的係數
+
+        :return: 係數
+        """
+        return self.coefficient
+
+    def get_degree(self) -> int:
+        """
+        回傳單項式的次數
+
+        :return: 次數
+        """
+        return self.degree
 
 
 class ArrangementEnum(Enum):
     """ 多項式的排列方式 """
+
     DESCENDING = 0
     """ 降冪排列 """
     ASCENDING = 1
@@ -66,7 +75,7 @@ class ArrangementEnum(Enum):
 
 
 class Polynomial:
-    """ 實數多項式 """
+    """ 有理數多項式 """
 
     def __init__(self, coefficients: tuple[int | float | Rational, ...] | list[
         int | float | Rational] | int | float | Rational | Monomial = 0,
@@ -74,7 +83,8 @@ class Polynomial:
         """
         任意整係數多項式
 
-        預設為降冪排列
+        :param coefficients: 係數
+        :param arrangement: 排列方式
         """
         if isinstance(coefficients, (tuple, list)):
             if arrangement == ArrangementEnum.DESCENDING:
@@ -92,11 +102,11 @@ class Polynomial:
             coefficients = [Rational(coefficients)]
         self.coefficients = coefficients
 
-    def __len__(self) -> int:
-        """ 回傳多項式的項數"""
+    def __len__(self):
+        """ 回傳多項式的項數 """
         return len(self.coefficients)
 
-    def __str__(self) -> str:
+    def __str__(self):
         """ 輸出多項式 """
         _str = "("
         for i in range(len(self))[::-1]:
@@ -107,41 +117,12 @@ class Polynomial:
         _str += ")"
         return _str
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         """ 輸出多項式 """
         return self.__str__()
 
-    def get_coefficients(self) -> tuple[Rational, ...]:
-        """ 回傳多項式的所有係數 """
-        return tuple(self.coefficients)
-
-    def get_degree(self) -> int:
-        """ 回傳多項式的最高次數 """
-        return len(self) - 1
-
-    def lowest_degree_coefficient(self) -> Rational:
-        """ 回傳多項式的常數項 """
-        return self.coefficients[0]
-
-    def highest_degree_coefficient(self) -> Rational:
-        """ 回傳多項式的最高次項係數 """
-        return self.coefficients[-1]
-
-    def get_monomial_by_degree(self, degree: int) -> Monomial:
-        """ 回傳多項式的 int degree 次項 """
-        return Monomial(self.coefficients[degree], degree)
-
-    def substitute(self, value: Rational | int | float) -> Rational:
-        """ 代入 int value"""
-        result = Rational(0)
-        for i, coefficient in enumerate(self.coefficients):
-            result += coefficient * (value ** i)
-        return result
-
     def __floordiv__(self, other):
         """ 進行綜合除法，回傳商式 """
-        if not isinstance(other, Polynomial):
-            other = Polynomial(other)
         if self.get_degree() < other.get_degree():
             return Polynomial(0)
         dividend_coefficients = self.coefficients[::-1]
@@ -165,36 +146,8 @@ class Polynomial:
         """ 進行綜合除法，回傳商式 """
         return self.__floordiv__(other)
 
-    def is_divisible(self, divisor: any) -> bool:
-        """ 判斷是否能被整除 """
-        if isinstance(divisor, (int, float, Rational)) or (
-                isinstance(divisor, (Monomial, Polynomial)) and divisor.get_degree() == 0):
-            return True
-        if (self - divisor * (self // divisor)) == 0:
-            return True
-        return False
-
-    def is_monomial(self) -> bool:
-        """ 判斷是否為單項式 """
-        for coefficient in self.coefficients[1:]:
-            if coefficient != 0:
-                return False
-        return True
-
-    def to_monomial(self) -> Monomial:
-        """ 轉換為單項式 """
-        return Monomial(self.highest_degree_coefficient(), self.get_degree())
-
-    def __eq__(self, other):
-        """ 判斷多項式是否相等 """
-        if not isinstance(other, Polynomial):
-            other = Polynomial(other)
-        return self.coefficients == other.coefficients
-
     def __mul__(self, other):
         """ 多項式乘法 """
-        if not isinstance(other, Polynomial):
-            other = Polynomial(other)
         result = Polynomial()
         for i, coefficient1 in enumerate(self.coefficients):
             for j, coefficient2 in enumerate(other.coefficients):
@@ -207,8 +160,6 @@ class Polynomial:
 
     def __add__(self, other):
         """ 多項式加法 """
-        if not isinstance(other, Polynomial):
-            other = Polynomial(other)
         result = Polynomial()
         result.coefficients = [Rational(0)] * max(len(self), len(other))
         for i in range(len(result.coefficients)):
@@ -245,10 +196,106 @@ class Polynomial:
         """ 多項式變號 """
         return self * Polynomial(-1)
 
+    def __eq__(self, other):
+        """ 判斷多項式是否相等 """
+        return self.coefficients == other.coefficients
+
+    def get_coefficients(self) -> tuple[Rational, ...]:
+        """
+        回傳多項式的所有係數
+
+        :return: 係數"""
+        return tuple(self.coefficients)
+
+    def get_degree(self) -> int:
+        """
+        回傳多項式的最高次數
+
+        :return: 最高次數
+        """
+        return len(self) - 1
+
+    def lowest_degree_coefficient(self) -> Rational:
+        """
+        回傳多項式的常數項
+
+        :return: 常數項
+        """
+        return self.coefficients[0]
+
+    def highest_degree_coefficient(self) -> Rational:
+        """
+        回傳多項式的最高次項係數
+
+        :return: 最高次項係數
+        """
+        return self.coefficients[-1]
+
+    def get_monomial_by_degree(self, degree: int) -> Monomial:
+        """ 回傳多項式的某次項
+
+        :param degree: 次數
+        :return: 單項式
+        """
+        return Monomial(self.coefficients[degree], degree)
+
+    def substitute(self, value: Rational | int | float) -> Rational:
+        """
+        代入值
+
+        :param value: 代入的值
+        :return: 代入後的值
+        """
+        result = Rational(0)
+        for i, coefficient in enumerate(self.coefficients):
+            result += coefficient * (value ** i)
+        return result
+
+    def is_divisible(self, divisor: any) -> bool:
+        """
+        判斷是否能被整除
+
+        :param divisor: 除數
+        :return: 是否能被整除
+        """
+        if isinstance(divisor, (int, float, Rational)) or (
+                isinstance(divisor, (Monomial, Polynomial)) and divisor.get_degree() == 0):
+            return True
+        if (self - divisor * (self // divisor)) == 0:
+            return True
+        return False
+
+    def is_monomial(self) -> bool:
+        """
+        判斷是否為單項式
+
+        :return: 是否為單項式
+        """
+        for coefficient in self.coefficients[1:]:
+            if coefficient != 0:
+                return False
+        return True
+
+    def to_monomial(self) -> Monomial:
+        """
+        轉換為單項式
+
+        :return: 單項式
+        """
+        return Monomial(self.highest_degree_coefficient(), self.get_degree())
+
 
 class Polynomials:
+    """ 多個有理數多項式 """
+
     def __init__(self, polynomials: any = (),
                  coefficient: Rational | Monomial | int | float = Rational(1)):
+        """
+        多個有理數多項式
+
+        :param polynomials: 多項式
+        :param coefficient: 係數
+        """
         if not isinstance(coefficient, Monomial):
             coefficient = Monomial(coefficient)
         if isinstance(polynomials, (list, tuple)):
@@ -269,7 +316,8 @@ class Polynomials:
         self.polynomials = polynomials
         self.coefficient = coefficient
 
-    def __str__(self) -> str:
+    def __str__(self):
+        """ 輸出多個多項式 """
         if len(self.polynomials) == 0:
             return str(self.coefficient)
         _str = str(self.coefficient) if self.coefficient != Monomial(1) else ""
@@ -287,31 +335,54 @@ class Polynomials:
                 count = 1
         return _str
 
-    def __repr__(self) -> str:
+    def __repr__(self):
+        """ 輸出多個多項式 """
         return self.__str__()
 
-    def append(self, polynomial: Polynomial):
-        self.polynomials.append(polynomial)
-        self.polynomials.sort(key=lambda _polynomial: (_polynomial.get_degree(), _polynomial.coefficients))
-        return polynomial
-
-    def get_only_polynomial(self) -> Polynomial | None:
-        if len(self.polynomials) == 1:
-            return self.polynomials[0]
-        raise ValueError("There are not only one polynomial in the polynomials.")
-
     def __mul__(self, other):
+        """ 多項式乘法 """
         if not isinstance(other, Polynomials):
             other = Polynomials(other)
         return Polynomials(self.polynomials + other.polynomials, self.coefficient * other.coefficient)
 
     def __imul__(self, other):
+        """ 多項式乘法 """
         return self.__mul__(other)
 
+    def append(self, polynomial: Polynomial):
+        """
+        加入多項式
+
+        :param polynomial: 多項式
+        """
+        self.polynomials.append(polynomial)
+        self.polynomials.sort(key=lambda _polynomial: (_polynomial.get_degree(), _polynomial.coefficients))
+        return polynomial
+
+    def get_only_polynomial(self) -> Polynomial | None:
+        """
+        回傳唯一的多項式
+
+        :return: 多項式
+        """
+        if len(self.polynomials) == 1:
+            return self.polynomials[0]
+        raise ValueError("There are not only one polynomial in the polynomials.")
+
     def get_polynomials(self) -> tuple[Polynomial, ...]:
+        """
+        回傳所有多項式
+
+        :return: 多項式
+        """
         return tuple(self.polynomials)
 
     def get_coefficient(self) -> Monomial:
+        """
+        回傳係數
+
+        :return: 係數
+        """
         return self.coefficient
 
 
@@ -349,13 +420,14 @@ def lagrange_interpolation(
         points: tuple[tuple[int | float | Rational, int | float | Rational] | list[int | float | Rational], ...] | list[
             tuple[int | float | Rational, int | float | Rational] | list[int | float | Rational]]) -> Polynomial:
     """
-    拉格朗日插值法
+    生成拉格朗日插值多項式
 
     :param points: 所有點的座標
     :return: 插值多項式
     """
     result = Polynomial()
     for i in range(len(points)):
+        # 生成基礎多項式
         basis_polynomial = Polynomial(1)
         for j in range(len(points)):
             if i == j:
@@ -368,9 +440,16 @@ def lagrange_interpolation(
 
 
 def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
+    """
+    使用一次因式檢驗法和拉格朗日插值法尋找因式
+
+    :param polynomial: 欲因式分解的多項式
+    :return: 因式分解的結果
+    """
     if polynomial.is_monomial():
         return Polynomials(coefficient=polynomial.to_monomial())
     polynomial_factors = Polynomials()
+
     # 嘗試一次因式檢驗法
     highest_degree_coefficient_factors = int_factorization(polynomial.highest_degree_coefficient().to_int(),
                                                            True)
@@ -388,23 +467,35 @@ def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
         return Polynomials(polynomial)
 
     # 嘗試拉格朗日插值法
+
+    # 代入 0,1 並因數分解結果
     test_list: list[tuple[int, list[int]]] = [
         (0, int_factorization(polynomial.lowest_degree_coefficient().to_int())),
         (1, int_factorization(polynomial.substitute(1).to_int()))]
+
+    # 必有因式次數小於等於多項式次數的一半
     for i in range(2, polynomial.get_degree() // 2 + 1):
+
+        # 代入 -1,2,-2,3,-3,...,n,-n 並因數分解結果
         if i % 2 == 0:
             test_list.append((-(i // 2), int_factorization(polynomial.substitute(-(i // 2)).to_int())))
         else:
             test_list.append((i // 2 + 1, int_factorization(polynomial.substitute(i // 2 + 1).to_int())))
-        test_point_index: list[int] = [0] * len(test_list)
-        tested_result: list[tuple[Polynomial, bool]] = []
+
+        test_point_index: list[int] = [0] * len(test_list)  # 紀錄測試點的索引值
+        tested_result: list[tuple[Polynomial, bool]] = []  # 紀錄已測試過的結果，減少運算次數
+
         while test_point_index[-1] != len(test_list[-1][1]):
+            # 準備欲生成多項式的點
             test_points = []
             for j in range(len(test_list)):
                 test_points.append((test_list[j][0], test_list[j][1][test_point_index[j]]))
+            # 生成拉格朗日插值多項式
             lagrange_polynomial = lagrange_interpolation(test_points)
-            if lagrange_polynomial.get_degree() == i:
+            if lagrange_polynomial.get_degree() == i:  # 檢測多項式次數是否正確
+                # 部分多項式互為倍數關係，將其視為同一多項式
                 lagrange_polynomial = grouping_by_common_factor(lagrange_polynomial).get_only_polynomial()
+                # 將測試結果存入列表
                 _found = False
                 divisible = False
                 for tested_polynomial, result in tested_result:
@@ -419,6 +510,7 @@ def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
                     polynomial_factors.append(lagrange_polynomial)
                     polynomial_factors *= polynomial_factor_test(polynomial // lagrange_polynomial)
                     return polynomial_factors
+            # 更新測試點索引值
             test_point_index[0] += 1
             for j in range(len(test_list) - 1):
                 if test_point_index[j] == len(test_list[j][1]):
@@ -434,9 +526,14 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
     :param polynomial: 欲因式分解的多項式
     :return: 因式分解的結果
     """
-    polynomial_factors = grouping_by_common_factor(polynomial)  # 嘗試提公因式
+
+    # 嘗試提公因式
+    polynomial_factors = grouping_by_common_factor(polynomial)
+
+    # 嘗試一次因式檢驗法和拉格朗日插值法
     if polynomial_factors.get_only_polynomial().get_degree() > 1:
         polynomial_factors = polynomial_factor_test(
             polynomial_factors.get_only_polynomial()) * Polynomials(
-            coefficient=polynomial_factors.get_coefficient())  # 嘗試一次因式檢驗法和拉格朗日插值法
+            coefficient=polynomial_factors.get_coefficient())
+
     return polynomial_factors

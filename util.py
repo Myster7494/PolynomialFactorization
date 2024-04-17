@@ -1,9 +1,10 @@
 def int_factorization(value: int, only_nature=False) -> list[int]:
     """
-    傳入一個 int value，回傳 value 的所有因數
+    進行因數分解
 
-    :param value: 要因數分解分解的正整數
-    :param only_nature: 只回傳正因數
+    :param value: 要因數分解分解的整數
+    :param only_nature: 是否只回傳正因數
+    :return: 所有因數
     """
     if value == 0:
         raise ValueError("0 has infinite factors.")
@@ -23,6 +24,7 @@ def gcd(values: tuple[int, ...] | list[int]) -> int:
     求最大公因數
 
     :param values: 欲求最大公因數的所有整數
+    :return: 最大公因數
     """
     if len(values) < 2:
         raise ValueError("At least 2 values are required.")
@@ -40,6 +42,7 @@ def lcm(values: tuple[int, ...] | list[int]) -> int:
     求最小公倍數
 
     :param values: 欲求最小公倍數的所有整數
+    :return: 最小公倍數
     """
     if len(values) < 2:
         raise ValueError("At least 2 values are required.")
@@ -52,9 +55,10 @@ def lcm(values: tuple[int, ...] | list[int]) -> int:
 
 def is_coprime(value1: int, value2: int) -> bool:
     """
-    測試兩個 int value 是否互質
+    測試兩個整數是否互質
 
     :param value1: 第一個整數
     :param value2: 第二個整數
+    :return: 是否互質
     """
     return gcd((value1, value2)) == 1
