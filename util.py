@@ -1,3 +1,9 @@
+"""
+Date: 2024/04
+Author: 桃園高中 邱顯智
+"""
+
+
 def int_factorization(value: int, only_nature=False) -> list[int]:
     """
     進行因數分解

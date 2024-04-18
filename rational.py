@@ -1,3 +1,8 @@
+"""
+Date: 2024/04
+Author: 桃園高中 邱顯智
+"""
+
 import util
 
 
