@@ -87,13 +87,16 @@ class Polynomial:
         :param arrangement: 排列方式
         """
         if isinstance(coefficients, (tuple, list)):
-            if arrangement == ArrangementEnum.DESCENDING:
-                coefficients = coefficients[::-1]
-            while coefficients[-1] == 0:
-                if len(coefficients) == 1:
-                    break
-                coefficients = coefficients[:-1]
-            coefficients = list(map(Rational, coefficients))
+            if len(coefficients) == 0:
+                coefficients = [Rational(0)]
+            else:
+                if arrangement == ArrangementEnum.DESCENDING:
+                    coefficients = coefficients[::-1]
+                while coefficients[-1] == 0:
+                    if len(coefficients) == 1:
+                        break
+                    coefficients = coefficients[:-1]
+                coefficients = list(map(Rational, coefficients))
         elif isinstance(coefficients, Monomial):
             monomial = coefficients
             coefficients = [Rational(0)] * monomial.get_degree()
@@ -123,6 +126,8 @@ class Polynomial:
 
     def __floordiv__(self, other):
         """ 進行綜合除法，回傳商式 """
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
         if self.get_degree() < other.get_degree():
             return Polynomial(0)
         dividend_coefficients = self.coefficients[::-1]
@@ -148,6 +153,8 @@ class Polynomial:
 
     def __mul__(self, other):
         """ 多項式乘法 """
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
         result = Polynomial()
         for i, coefficient1 in enumerate(self.coefficients):
             for j, coefficient2 in enumerate(other.coefficients):
@@ -160,6 +167,8 @@ class Polynomial:
 
     def __add__(self, other):
         """ 多項式加法 """
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
         result = Polynomial()
         result.coefficients = [Rational(0)] * max(len(self), len(other))
         for i in range(len(result.coefficients)):
@@ -393,12 +402,13 @@ def grouping_by_common_factor(polynomial: Polynomial) -> Polynomials:
     :param polynomial: 欲提取公因式的多項式
     :return: 公因式和提取後的多項式
     """
-    denominators: set[int] = {coefficient.get_denominator() for coefficient in polynomial.get_coefficients()}
+    denominators = {coefficient.get_denominator() for coefficient in polynomial.get_coefficients()}
     if denominators != {1}:  # 檢查是否為整係數多項式
         if len(denominators) == 1:
-            return Polynomials(grouping_by_common_factor(polynomial * Polynomial(denominators.pop())),
-                               Monomial(Rational(1, denominators.pop())))
-        denominators_lcm: int = lcm(tuple(denominators))
+            denominators_lcm = denominators.pop()
+            return Polynomials(grouping_by_common_factor(polynomial * Polynomial(denominators_lcm)),
+                               Monomial(Rational(1, denominators_lcm)))
+        denominators_lcm = lcm(tuple(denominators))
         return Polynomials(grouping_by_common_factor(polynomial * Polynomial(denominators_lcm)),
                            Monomial(Rational(1, denominators_lcm)))
     degree = 0
@@ -492,7 +502,7 @@ def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
             # 生成拉格朗日插值多項式
             lagrange_polynomial = lagrange_interpolation(test_points)
             if lagrange_polynomial.get_degree() == i:  # 檢測多項式次數是否正確
-                # 部分多項式互為倍數關係，將其視為同一多項式
+                # 多項式首項可能不是1，因此需要進行提公因式
                 lagrange_polynomial = grouping_by_common_factor(lagrange_polynomial).get_only_polynomial()
                 # 將測試結果存入列表
                 _found = False
@@ -525,6 +535,9 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
     :param polynomial: 欲因式分解的多項式
     :return: 因式分解的結果
     """
+
+    if polynomial.get_degree() == 0:
+        return Polynomials(coefficient=polynomial.lowest_degree_coefficient())
 
     # 嘗試提公因式
     polynomial_factors = grouping_by_common_factor(polynomial)
