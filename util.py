@@ -15,13 +15,13 @@ def int_factorization(value: int, only_nature=False) -> list[int]:
     if value == 0:
         raise ValueError("0 has infinite factors.")
     factors: set[int] = set()
-    for i in range(1, int(abs(value) ** 0.5) + 1):
-        if value % i == 0:
-            factors.add(i)
-            factors.add(abs(value // i))
+    for factor1 in range(1, int(abs(value) ** 0.5) + 1):
+        if value % factor1 == 0:
+            factors.add(factor1)
+            factors.add(abs(factor2 := value // factor1))
             if not only_nature:
-                factors.add(-i)
-                factors.add(-abs(value // i))
+                factors.add(-factor1)
+                factors.add(-abs(factor2))
     return sorted(list(factors))
 
 

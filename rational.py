@@ -35,8 +35,7 @@ class Rational:
         elif isinstance(numerator, Rational) or isinstance(denominator, Rational):
             numerator, denominator = Rational(Rational(numerator) / Rational(denominator)).numerator_and_denominator()
         if not util.is_coprime(numerator, denominator):
-            _gcd = util.gcd((numerator, denominator))
-            numerator //= _gcd
+            numerator //= (_gcd := util.gcd((numerator, denominator)))
             denominator //= _gcd
         self.numerator = numerator if denominator > 0 else -numerator
         self.denominator = abs(denominator)
@@ -72,10 +71,9 @@ class Rational:
 
     def __mul__(self, other):
         """ 有理數乘法 """
-        _gcd1 = util.gcd((self.numerator, other.denominator))
-        _gcd2 = util.gcd((self.denominator, other.numerator))
-        return Rational((self.numerator // _gcd1) * (other.numerator // _gcd2),
-                        (self.denominator // _gcd2) * (other.denominator // _gcd1))
+        return Rational((self.numerator // (gcd1 := util.gcd((self.numerator, other.denominator)))) * (
+                other.numerator // (gcd2 := util.gcd((self.denominator, other.numerator)))),
+                        (self.denominator // gcd2) * (other.denominator // gcd1))
 
     def __imul__(self, other):
         """ 有理數乘法 """

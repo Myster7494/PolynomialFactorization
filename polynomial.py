@@ -51,6 +51,8 @@ class Monomial:
 
     def __eq__(self, other):
         """ 判斷單項式是否相等 """
+        if not isinstance(other, Monomial):
+            other = Monomial(other)
         return self.coefficient == other.coefficient and self.degree == other.degree
 
     def get_coefficient(self) -> Rational:
@@ -212,7 +214,9 @@ class Polynomial:
 
     def __eq__(self, other):
         """ 判斷多項式是否相等 """
-        return self.coefficients == other.coefficients
+        if isinstance(other, Polynomial):
+            return self.coefficients == other.coefficients
+        return self.coefficients == other
 
     def get_coefficients(self) -> tuple[Rational, ...]:
         """
@@ -334,7 +338,7 @@ class Polynomials:
         """ 輸出多個多項式 """
         if len(self.polynomials) == 0:
             return str(self.coefficient)
-        _str = str(self.coefficient) if self.coefficient != Monomial(1) else ""
+        _str = "-" if self.coefficient == -1 else "" if self.coefficient == 1 else str(self.coefficient)
         count = 1
         i = 0
         while i < len(self.polynomials):
@@ -407,6 +411,7 @@ def grouping_by_common_factor(polynomial: Polynomial) -> Polynomials:
     :param polynomial: 欲提取公因式的多項式
     :return: 公因式和提取後的多項式
     """
+
     denominators = {coefficient.get_denominator() for coefficient in polynomial.get_coefficients()}
     if denominators != {1}:  # 檢查是否為整係數多項式
         if len(denominators) == 1:
@@ -437,6 +442,7 @@ def lagrange_interpolation(
     :param points: 所有點的座標
     :return: 插值多項式
     """
+
     result = Polynomial()
     for i in range(len(points)):
         # 生成基礎多項式
@@ -458,6 +464,7 @@ def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
     :param polynomial: 欲因式分解的多項式
     :return: 因式分解的結果
     """
+
     if polynomial.is_monomial():
         return Polynomials(coefficient=polynomial.to_monomial())
     polynomial_factors = Polynomials()
@@ -470,13 +477,12 @@ def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
     for factor1 in highest_degree_coefficient_factors:
         for factor2 in lowest_degree_coefficient_factors:
             if polynomial.substitute(-Rational(factor2, factor1)) == 0:
-                _gcd = gcd((factor1, factor2))
-                factor = Polynomial((factor1 // _gcd, factor2 // _gcd))
+                factor = Polynomial((factor1 // (_gcd := gcd((factor1, factor2))), factor2 // _gcd))
                 polynomial_factors.append(factor)
                 polynomial_factors *= polynomial_factor_test(polynomial // factor)
                 return polynomial_factors
 
-    # 若多項式次數小於 4，則其因式必有一個是一次因式
+    # 若多項式次數小於 4 且其有因式，則其因式必有一個是一次因式
     if polynomial.get_degree() < 4:
         return Polynomials(polynomial)
 
@@ -500,30 +506,25 @@ def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
         tested_result: list[tuple[Polynomial, bool]] = []  # 紀錄已測試過的結果，減少運算次數
 
         while test_point_index[-1] != len(test_list[-1][1]):
-            # 準備欲生成多項式的點
-            test_points = []
-            for j in range(len(test_list)):
-                test_points.append((test_list[j][0], test_list[j][1][test_point_index[j]]))
             # 生成拉格朗日插值多項式
-            lagrange_polynomial = lagrange_interpolation(test_points)
+            lagrange_polynomial = lagrange_interpolation(
+                [(test_list[j][0], test_list[j][1][test_point_index[j]]) for j in range(len(test_list))])
             if lagrange_polynomial.get_degree() == i:  # 檢測多項式次數是否正確
                 # 多項式首項可能不是1，因此需要進行提公因式
                 lagrange_polynomial = grouping_by_common_factor(lagrange_polynomial).get_only_polynomial()
                 # 將測試結果存入列表
-                _found = False
-                divisible = False
                 for tested_polynomial, result in tested_result:
                     if tested_polynomial == lagrange_polynomial:
-                        _found = True
                         divisible = result
                         break
-                if not _found:
+                else:
                     divisible = polynomial.is_divisible(lagrange_polynomial)
                     tested_result.append((lagrange_polynomial, divisible))
                 if divisible:
                     polynomial_factors.append(lagrange_polynomial)
                     polynomial_factors *= polynomial_factor_test(polynomial // lagrange_polynomial)
                     return polynomial_factors
+
             # 更新測試點索引值
             test_point_index[0] += 1
             for j in range(len(test_list) - 1):
@@ -549,8 +550,8 @@ def polynomial_factorization(polynomial: Polynomial) -> Polynomials:
 
     # 嘗試一次因式檢驗法和拉格朗日插值法
     if polynomial_factors.get_only_polynomial().get_degree() > 1:
-        polynomial_factors = polynomial_factor_test(
-            polynomial_factors.get_only_polynomial()) * Polynomials(
-            coefficient=polynomial_factors.get_coefficient())
+        polynomial_factors = Polynomials(
+            coefficient=polynomial_factors.get_coefficient(), polynomials=polynomial_factor_test(
+                polynomial_factors.get_only_polynomial()))
 
     return polynomial_factors
