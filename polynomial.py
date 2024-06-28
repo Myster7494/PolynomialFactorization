@@ -1,5 +1,5 @@
 """
-Date: 2024/04
+Date: 2024/06
 Author: 桃園高中 邱顯智
 """
 
@@ -141,11 +141,11 @@ class Polynomial:
         leading_coefficient = other.highest_degree_coefficient()
         divisor_coefficients = [-Rational(coefficient, leading_coefficient) for coefficient in
                                 other.coefficients[-2::-1]]
-        coefficients_difference = len(dividend_coefficients) - len(divisor_coefficients)
-        table: list[list[Rational]] = [[Rational(0)] * coefficients_difference for _ in
+        length_difference = len(dividend_coefficients) - len(divisor_coefficients)
+        table: list[list[Rational]] = [[Rational(0)] * length_difference for _ in
                                        range(len(divisor_coefficients))]
-        quotient_coefficients: list[Rational] = [dividend_coefficients[i] for i in range(coefficients_difference)]
-        for i in range(coefficients_difference):
+        quotient_coefficients: list[Rational] = dividend_coefficients[:length_difference]
+        for i in range(length_difference):
             for j in range(len(divisor_coefficients)):
                 if i - j - 1 >= 0:
                     quotient_coefficients[i] += table[j][i - j - 1]
@@ -216,7 +216,7 @@ class Polynomial:
         """ 判斷多項式是否相等 """
         if isinstance(other, Polynomial):
             return self.coefficients == other.coefficients
-        return self.coefficients == other
+        return len(self.coefficients) == 1 and self.coefficients[0] == other
 
     def get_coefficients(self) -> tuple[Rational, ...]:
         """
@@ -509,8 +509,8 @@ def polynomial_factor_test(polynomial: Polynomial) -> Polynomials:
             # 生成拉格朗日插值多項式
             lagrange_polynomial = lagrange_interpolation(
                 [(test_list[j][0], test_list[j][1][test_point_index[j]]) for j in range(len(test_list))])
-            if lagrange_polynomial.get_degree() == i:  # 檢測多項式次數是否正確
-                # 多項式首項可能不是1，因此需要進行提公因式
+            if lagrange_polynomial.get_degree() == i:  # 檢測多項式次數是否正確，因為有可能有點在同一較低次的函數上
+                # 多項式最高次項係數可能不是1，因此需要進行提公因式
                 lagrange_polynomial = grouping_by_common_factor(lagrange_polynomial).get_only_polynomial()
                 # 將測試結果存入列表
                 for tested_polynomial, result in tested_result:
